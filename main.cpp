@@ -2,16 +2,20 @@
 #include <filesystem>
 #include <string>
 #include <vector>
+
 #include "boost/program_options.hpp"
 #include "gdal_priv.h"
 
-using namespace std;
+#include "GDALDatasetReader.h"
+
+// using namespace std;
+using namespace stt;
 namespace po = boost::program_options;
 namespace fs = std::filesystem;
 
-int main(int argc, char *argv[]){
-    string version {"v0.1.0"};
-    // vector<string> inputFiles;
+int main(int argc, char *argv[])
+{
+    std::string version {"v0.1.0"};
     fs::path inputFile;
     fs::path outputDir;
 
@@ -24,7 +28,6 @@ int main(int argc, char *argv[]){
             po::value<fs::path>(&outputDir)->default_value(fs::current_path()),
             "output directory"
         )
-        // ("input-file,i", po::value<vector<string>>(), "input file")
     ;
 
     po::options_description hiddenArgs;
@@ -48,40 +51,54 @@ int main(int argc, char *argv[]){
     );
     po::notify(varMap);
 
-    // if (varMap.count("input-file")) {
-    //     inputFiles = varMap["input-file"].as<vector<string>>();
-    //     for (const string &i : inputFiles) {
-    //         cout << i << "\n";
-    //         // cout << "input files: " << varMap["input-file"].as<vector<std::string>>()[0] << "\n";
-    //     }
-    // }
-
     if (varMap.count("help")) {
-        cout << "space-terrain-tiler " << version << "\n";
-        cout << optionalArgs << "\n";
+        std::cout << "space-terrain-tiler " << version << "\n";
+        std::cout << optionalArgs << "\n";
     }
 
     if (varMap.count("version")) {
-        cout << "space-terrain-tiler " << version << "\n";
+        std::cout << "space-terrain-tiler " << version << "\n";
     }
 
     if (varMap.count("input-file")) {
         if (fs::is_regular_file(inputFile)) {
-            cout << "input file: " << inputFile << "\n";
+            std::cout << "input file: " << inputFile << "\n";
         } else {
-            cerr << "input file " << inputFile << " not found\n";
+            std::cerr << "input file " << inputFile << " not found\n";
             return EXIT_FAILURE;
         }
     }
 
     if (varMap.count("output-directory")) {
         if (fs::is_directory(outputDir)) {
-            cout << "output directory: " << outputDir << "\n";
+            std::cout << "output directory: " << outputDir << "\n";
         } else {
-            cout << "output directory " << outputDir;
-            cout << " not found. using current path\n";
+            std::cout << "output directory " << outputDir;
+            std::cout << " not found. using current path\n";
         }
     }
 
     GDALAllRegister();
+
+    // define the grid we are going to use
+    Grid grid1;
+    int tileSize1 = { 65 };
+    Grid grid2;
+    int tileSize2 = { 256 };
+
+    std::cout << "tileSize1: " << tileSize1 << "\n";
+    std::cout << "tileSize2: " << tileSize2 << "\n";
+
+    // OGRSpatialReference srs;
+    // srs.importFromEPSG(4326);
+
+    // grid = Grid(tileSize, CRSBounds(-180, -90, 180, 90), srs);
+
+    // std::cout << grid.getSRS().exportToWkt() << "\n";
+
+    grid1 = GlobalGeodetic(tileSize1);
+    // grid2 = GlobalMercator(tileSize2);
+
+    std::cout << grid1.tileSize() << "\n";
+    std::cout << grid1.getSRS().exportToWkt() << "\n";
 }
