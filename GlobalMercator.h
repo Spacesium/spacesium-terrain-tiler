@@ -6,6 +6,8 @@
 * @brief this defines the `GlobalMercator` class
 */
 
+#define _USE_MATH_DEFINES // for M_PI
+
 #include "config.h"
 #include "Grid.h"
 

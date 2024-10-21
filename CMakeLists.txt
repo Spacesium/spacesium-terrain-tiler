@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.5.0)
 project(space-terrain-tiler VERSION 0.1.0 LANGUAGES C CXX)
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 set(STT_VERSION_MAJOR 0)
@@ -21,14 +21,15 @@ find_package(Boost 1.86.0 COMPONENTS program_options REQUIRED)
 find_package(GDAL REQUIRED)
 find_package(PROJ REQUIRED)
 
-add_library(ctb SHARED
+add_library(stt SHARED
     GlobalGeodetic.cpp
+    GlobalMercator.cpp
 )
 
 target_link_libraries(space-terrain-tiler Boost::program_options)
 target_link_libraries(space-terrain-tiler GDAL::GDAL)
 target_link_libraries(space-terrain-tiler PROJ::proj)
-target_link_libraries(space-terrain-tiler ctb)
+target_link_libraries(space-terrain-tiler stt)
 
 configure_file(
     "${PROJECT_SOURCE_DIR}/config.h.in"
