@@ -27,10 +27,10 @@ public:
 protected:
     /// the underlying FILE*
     FILE *fp;
-}
+};
 
 /// implements STTOutputStream for `std::ostream` objects
-class STT_DLL stt:STTStdOutputStream: public stt::STTOutputStream
+class STT_DLL stt::STTStdOutputStream: public stt::STTOutputStream
 {
 public:
     STTStdOutputStream(std::ostream &stream): mstream(stream) {}
@@ -41,6 +41,6 @@ public:
 protected:
     /// the underlying std::ostream
     std::ostream &mstream;
-}
+};
 
 #endif /* STTFILEOUTPUTSTREAM_H_ */

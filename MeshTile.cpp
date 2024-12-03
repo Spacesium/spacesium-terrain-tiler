@@ -74,7 +74,7 @@ static inline double ocp_computeMagnitude(const CRSVertex &position, const CRSVe
 }
 
 static inline CRSVertex ocp_fromPoints(
-    const std::vector<CRSVectex> &points,
+    const std::vector<CRSVertex> &points,
     const  BoundingSphere<double> &boundingSphere)
 {
     const double MIN = -std::numeric_limits<double>::infinity();
@@ -89,7 +89,7 @@ static inline CRSVertex ocp_fromPoints(
     );
 
     for (int i = 0, icount = points.size(); i < icount; i++) {
-        const CRSVertex &point = point[i];
+        const CRSVertex &point = points[i];
         CRSVertex scaledPoint(
             point.x * llh_ecef_rX,
             point.y * llh_ecef_rY,
@@ -127,7 +127,7 @@ template <typename T> int writeEdgeIndices(
     std::vector<uint32_t> indices;
     std::map<uint32_t, size_t> ihash;
 
-    for (size_t i = 0; icount = mesh.indices.size(); i < icount; i++) {
+    for (size_t i = 0; i < mesh.indices.size(); i++) {
         uint32_t indice = mesh.indices[i];
         double val = mesh.vertices[indice][componentIndex];
 
@@ -161,9 +161,273 @@ static inline uint16_t zigZagEncode(int n)
 // triangle area
 static inline double triangleArea(const CRSVertex &a, const CRSVertex &b)
 {
-    double i = std::power(a[1] * b[2] - a[2] * b[1], 2);
-    double j = std::power(a[2] * b[0] - a[0] * b[2], 2);
-    double k = std::power(a[0] * b[1] - a[1] * b[0], 2);
+    double i = std::pow(a[1] * b[2] - a[2] * b[1], 2);
+    double j = std::pow(a[2] * b[0] - a[0] * b[2], 2);
+    double k = std::pow(a[0] * b[1] - a[1] * b[0], 2);
 
     return 0.5 * sqrt(i + j + k);
+}
+
+// contraint a value to lie between two values
+static inline double clamp_value(double value, double min, double max)
+{
+    return value < min ? min : value > max ? max : value;
+}
+
+// converts a scalar value in the range [-1.0, 1.0] to a SNORM in the range [0, rangeMax]
+static inline unsigned char snorm_value(double value, double rangeMax = 255)
+{
+    return (unsigned char) int (std::round((clamp_value(value, -1.0, 1.0) * 0.5 + 0.5) * rangeMax));
+}
+
+/**
+* encodes a normalized vector into 2 SNORM values in the range of [0 - rangeMax]
+* following the 'oct' encoding.
+*
+* oct encoding is a compact representation of unit length vectors.
+* the 'oct' encoding is described in "A Survey of Efficient Representations
+* of Independent Unit Vectors", Cigolle et al 2014:
+* {@link http://jcgt.org/published/0003/02/01/}
+*/
+static inline Coordinate<unsigned char> octEncode(const CRSVertex &vector, double rangeMax = 255)
+{
+    Coordinate<double> temp;
+    double llnorm = std::abs(vector.x) + std::abs(vector.y) + std::abs(vector.z);
+    temp.x = vector.x / llnorm;
+    temp.y = vector.y / llnorm;
+
+    if (vector.z < 0) {
+        double x = temp.x;
+        double y = temp.y;
+        temp.x = (1.0 - std::abs(y)) * (x < 0.0 ? -1.0 : 1.0);
+        temp.y = (1.0 - std::abs(x)) * (y < 0.0 ? -1.0 : 1.0);
+    }
+    return Coordinate<unsigned char>(snorm_value(temp.x, rangeMax), snorm_value(temp.y, rangeMax));
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+MeshTile::MeshTile(): Tile(), mChildren(0)
+{}
+
+MeshTile::MeshTile(const TileCoordinate &coord): Tile(coord), mChildren(0)
+{}
+
+/**
+* @details this writes gzipped terrain data to a file.
+*/
+void MeshTile::writeFile(STTOutputStream &ostream, bool writeVertexNormals) const
+{
+    // calculate main header mesh data
+    std::vector<CRSVertex> cartesianVertices;
+    BoundingSphere<double> cartesianBoundingSphere;
+    BoundingBox<double> cartesianBounds;
+    BoundingBox<double> bounds;
+
+    cartesianVertices.resize(mMesh.vertices.size());
+    for (size_t i = 0; i < mMesh.vertices.size(); i++) {
+        const CRSVertex &vertex = mMesh.vertices[i];
+        cartesianVertices[i] = LLH2ECEF(vertex);
+    }
+    cartesianBoundingSphere.fromPoints(cartesianVertices);
+    cartesianBounds.fromPoints(cartesianVertices);
+    bounds.fromPoints(mMesh.vertices);
+
+    // write the mesh header data:
+    // https://github.com/CesiumGS/quantized-mesh
+
+    // the center of the tile in Earth-centered Fixed coordinates.
+    double centerX = cartesianBounds.min.x + 0.5 * (cartesianBounds.max.x - cartesianBounds.min.x);
+    double centerY = cartesianBounds.min.y + 0.5 * (cartesianBounds.max.y - cartesianBounds.min.y);
+    double centerZ = cartesianBounds.min.z + 0.5 * (cartesianBounds.max.z - cartesianBounds.min.z);
+    ostream.write(&centerX, sizeof(double));
+    ostream.write(&centerY, sizeof(double));
+    ostream.write(&centerZ, sizeof(double));
+
+    // the minimum and maximum heights in the area covered by this tile
+    float minimumHeight = (float) bounds.min.z;
+    float maximumHeight = (float) bounds.max.z;
+    ostream.write(&minimumHeight, sizeof(float));
+    ostream.write(&maximumHeight, sizeof(float));
+
+    // the tile's bounding sphere. the X, Y, Z coordinates are again expressed
+    // in Earth-centered Fixed coordinates, and the radius is in meters.
+    double boundingSphereCenterX = cartesianBoundingSphere.center.x;
+    double boundingSphereCenterY = cartesianBoundingSphere.center.y;
+    double boundingSphereCenterZ = cartesianBoundingSphere.center.z;
+    double boundingSphereRadius = cartesianBoundingSphere.radius;
+    ostream.write(&boundingSphereCenterX, sizeof(double));
+    ostream.write(&boundingSphereCenterY, sizeof(double));
+    ostream.write(&boundingSphereCenterZ, sizeof(double));
+    ostream.write(&boundingSphereRadius, sizeof(double));
+
+    // the horizon occlusion point, expressed in the ellipsoid-scaled
+    // Earth-centered fixed frame.
+    CRSVertex horizonOcclusionPoint = ocp_fromPoints(cartesianVertices, cartesianBoundingSphere);
+    ostream.write(&horizonOcclusionPoint.x, sizeof(double));
+    ostream.write(&horizonOcclusionPoint.y, sizeof(double));
+    ostream.write(&horizonOcclusionPoint.z, sizeof(double));
+
+    // write mesh vertices (X Y Z components of each vertices)
+    int vertexCount = mMesh.vertices.size();
+    ostream.write(&vertexCount, sizeof(int));
+    for (int c = 0; c < 3; c++) {
+        double origin = bounds.min[c];
+        double factor = 0;
+
+        if (bounds.max[c] > bounds.min[c]) {
+            factor = SHORT_MAX / (bounds.max[c] - bounds.min[c]);
+        }
+
+        // move the initial value
+        int u0 = quantizeIndices(origin, factor, mMesh.vertices[0][c]), u1, ud;
+        uint16_t sval = zigZagEncode(u0);
+        ostream.write(&sval, sizeof(uint16_t));
+
+        for (size_t i = 1, icount = mMesh.vertices.size(); i < icount; i++) {
+            u1 = quantizeIndices(origin, factor, mMesh.vertices[i][c]);
+            ud = u1 = u0;
+            sval = zigZagEncode(ud);
+            ostream.write(&sval, sizeof(uint16_t));
+            u0 = u1;
+        }
+    }
+
+    // write mesh indices
+    int triangleCount = mMesh.indices.size() / 3;
+    ostream.write(&triangleCount, sizeof(int));
+    if (vertexCount > BYTESPLIT) {
+        uint32_t highest = 0;
+        uint32_t code;
+
+        // write main indices
+        for (size_t i = 0, icount = mMesh.indices.size(); i < icount; i++) {
+            code = highest - mMesh.indices[i];
+            ostream.write(&code, sizeof(uint32_t));
+
+            if (code == 0) highest++;
+        }
+
+        // write all vertices on the edge of the tile (W, S, E, N)
+        writeEdgeIndices<uint32_t>(ostream, mMesh, bounds.min.x, 0);
+        writeEdgeIndices<uint32_t>(ostream, mMesh, bounds.min.y, 1);
+        writeEdgeIndices<uint32_t>(ostream, mMesh, bounds.max.x, 0);
+        writeEdgeIndices<uint32_t>(ostream, mMesh, bounds.max.y, 1);
+    }
+
+    // write 'Oct-Encoded Per-Vertex Normals' for Terrain Lighting
+    if (writeVertexNormals && triangleCount > 0) {
+        unsigned char extensionId = 1;
+        ostream.write(&extensionId, sizeof(unsigned char));
+        int extensionLength = 2 * vertexCount;
+        ostream.write(&extensionLength, sizeof(int));
+
+        std::vector<CRSVertex> normalsPerVertex(vertexCount);
+        std::vector<CRSVertex> normalsPerFace(triangleCount);
+        std::vector<double> areasPerFace(triangleCount);
+
+        for (size_t i = 0, j = 0; i < mMesh.indices.size(); i += 3, j++) {
+            const CRSVertex &v0 = cartesianVertices[mMesh.indices[i]];
+            const CRSVertex &v1 = cartesianVertices[mMesh.indices[i + 1]];
+            const CRSVertex &v2 = cartesianVertices[mMesh.indices[i + 2]];
+
+            CRSVertex normal = (v1 - v0).cross(v2 - v0);
+            double area = triangleArea(v0, v1);
+            normalsPerFace[j] = normal;
+            areasPerFace[j] = area;
+        }
+
+        for (size_t i = 0, icount = mMesh.indices.size(), j = 0; i < icount; i += 3, j++) {
+            int indexV0 = mMesh.indices[i];
+            int indexV1 = mMesh.indices[i + 1];
+            int indexV2 = mMesh.indices[i + 2];
+
+            CRSVertex weightedNormal = normalsPerFace[j] * areasPerFace[j];
+
+            normalsPerVertex[indexV0] = normalsPerVertex[indexV0] + weightedNormal;
+            normalsPerVertex[indexV1] = normalsPerVertex[indexV1] + weightedNormal;
+            normalsPerVertex[indexV2] = normalsPerVertex[indexV2] + weightedNormal;
+        }
+
+        for (size_t i = 0; i < vertexCount; i++) {
+            Coordinate<unsigned char> xy = octEncode(normalsPerVertex[i].normalize());
+            ostream.write(&xy.x, sizeof(unsigned char));
+            ostream.write(&xy.y, sizeof(unsigned char));
+        }
+    }
+}
+
+bool MeshTile::hasChildren() const
+{
+    return mChildren;
+}
+
+bool MeshTile::hasChildSW() const
+{
+    return ((mChildren & TERRAIN_CHILD_SW) == TERRAIN_CHILD_SW);
+}
+
+bool MeshTile::hasChildSE() const
+{
+    return ((mChildren & TERRAIN_CHILD_SE) == TERRAIN_CHILD_SE);
+}
+
+bool MeshTile::hasChildNW() const
+{
+    return ((mChildren & TERRAIN_CHILD_NW) == TERRAIN_CHILD_NW);
+}
+
+bool MeshTile::hasChildNE() const
+{
+    return ((mChildren & TERRAIN_CHILD_NE) == TERRAIN_CHILD_NE);
+}
+
+void MeshTile::setChildSW(bool on)
+{
+    if (on) {
+        mChildren |= TERRAIN_CHILD_SW;
+    } else {
+        mChildren &= ~TERRAIN_CHILD_SW;
+    }
+}
+
+void MeshTile::setChildSE(bool on)
+{
+    if (on) {
+        mChildren |= TERRAIN_CHILD_SE;
+    } else {
+        mChildren &= ~TERRAIN_CHILD_SE;
+    }
+}
+
+void MeshTile::setChildNW(bool on)
+{
+    if (on) {
+        mChildren |= TERRAIN_CHILD_NW;
+    } else {
+        mChildren &= ~TERRAIN_CHILD_NW;
+    }
+}
+
+void MeshTile::setChildNE(bool on)
+{
+    if (on) {
+        mChildren |= TERRAIN_CHILD_NE;
+    } else {
+        mChildren &= ~TERRAIN_CHILD_NE;
+    }
+}
+
+void MeshTile::setAllChildren(bool on)
+{
+    if (on) {
+        mChildren = TERRAIN_CHILD_SW | TERRAIN_CHILD_SE | TERRAIN_CHILD_NW | TERRAIN_CHILD_NE;
+    } else {
+        mChildren = 0;
+    }
+}
+
+const Mesh & MeshTile::getMesh() const
+{
+    return mMesh;
 }

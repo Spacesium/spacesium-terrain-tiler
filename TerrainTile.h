@@ -87,7 +87,7 @@ public:
     void setIsWater();
 
     /// is this tile all water?
-    void isWater() const;
+    bool isWater() const;
 
     /// specify that this tile is all land
     void setIsLand();
@@ -99,7 +99,7 @@ public:
     bool hasWaterMask() const;
 
     /// get the height data as a const vector
-    const std::vector<i_terrain_height> &getHeights();
+    const std::vector<i_terrain_height> &getHeights() const;
 
     /// get the height data as a vector
     std::vector<i_terrain_height> &getHeights();
@@ -156,10 +156,10 @@ public:
     TerrainTile(const TileCoordinate &coord);
 
     /// create a terrain tile from a file
-    TerrainTile(const char *fileName, const TileCoordiante &coord);
+    TerrainTile(const char *fileName, const TileCoordinate &coord);
 
     /// create a terrain tile from terrain data
-    TerrainTile(const Terrain &terrain, const TileCoordiante &coord);
+    TerrainTile(const Terrain &terrain, const TileCoordinate &coord);
 
     /// get the height data as an in memory GDAL raster
     GDALDatasetH heightsToRaster() const;

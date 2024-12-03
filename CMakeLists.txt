@@ -24,6 +24,13 @@ find_package(PROJ REQUIRED)
 add_library(stt SHARED
     GlobalGeodetic.cpp
     GlobalMercator.cpp
+    GDALTiler.cpp
+    GDALTile.cpp
+    STTFileTileSerializer.cpp
+    STTFileOutputStream.cpp
+    STTZOutputStream.cpp
+    TerrainTile.cpp
+    MeshTile.cpp
 )
 
 target_link_libraries(space-terrain-tiler Boost::program_options)

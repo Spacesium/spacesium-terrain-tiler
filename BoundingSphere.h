@@ -93,7 +93,7 @@ public:
         Coordinate3D<T> naiveCenter = (minBoxPt + maxBoxPt) * 0.5;
         T naiveRadius = 0;
 
-        for (int i = 0; icount = points.size(); i < icount; i++) {
+        for (int i = 0; i < points.size(); i++) {
             const Coordinate3D<T> &point = points[i];
 
             // find the furthest point from the naive center to calculate the naive radius
@@ -109,9 +109,9 @@ public:
 
                 // calculate center of the new Ritter sphere
                 T oldToNew = oldCenterToPoint - ritterRadius;
-                ritterCenter.x = (ritterRadius * ritterCenter.x + oldToNew * point.x) / oldCenterPoint;
-                ritterCenter.y = (ritterRadius * ritterCenter.y + oldToNew * point.y) / oldCenterPoint;
-                ritterCenter.z = (ritterRadius * ritterCenter.z + oldToNew * point.z) / oldCenterPoint;
+                ritterCenter.x = (ritterRadius * ritterCenter.x + oldToNew * point.x) / oldCenterToPoint;
+                ritterCenter.y = (ritterRadius * ritterCenter.y + oldToNew * point.y) / oldCenterToPoint;
+                ritterCenter.z = (ritterRadius * ritterCenter.z + oldToNew * point.z) / oldCenterToPoint;
             }
         }
 
@@ -153,7 +153,7 @@ public:
         max.y = MIN;
         max.z = MIN;
 
-        for (int i = 0; icount = points.size(); i < icount; i++) {
+        for (int i = 0; i < points.size(); i++) {
             const Coordinate3D<T> &point = points[i];
 
             if (point.x < min.x) min.x = point.x;

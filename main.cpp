@@ -12,7 +12,8 @@
 // #include "TerrainIterator.h"
 // #include "MeshIterator.h"
 // #include "GDALDatasetReader.h"
-// #include "STTFileTileSerializer.h"
+#include "STTFileTileSerializer.h"
+#include "RasterTiler.h"
 
 using namespace stt;
 namespace po = boost::program_options;
@@ -32,6 +33,7 @@ struct paramsStruct {
     po::variables_map varMap;
     bool quiet;
     bool verbose;
+    bool resume;
 };
 
 paramsStruct parseOptions(int argc, char *argv[])
@@ -130,23 +132,9 @@ int main(int argc, char *argv[])
     GDALAllRegister();
 
     // define the grid we are going to use
-    Grid grid1;
-    int tileSize1 = { 65 };
-    Grid grid2;
-    int tileSize2 = { 256 };
-
-    std::cout << "tileSize1: " << tileSize1 << "\n";
-    std::cout << "tileSize2: " << tileSize2 << "\n";
-
-    // OGRSpatialReference srs;
-    // srs.importFromEPSG(4326);
-
-    // grid = Grid(tileSize, CRSBounds(-180, -90, 180, 90), srs);
-
-    // std::cout << grid.getSRS().exportToWkt() << "\n";
-
-    grid = GlobalGeodetic(tileSize1);
-    // grid2 = GlobalMercator(tileSize2);
+    Grid grid;
+    int tileSize = { 65 };
+    grid = GlobalGeodetic(tileSize);
 
     std::cout << grid.tileSize() << "\n";
     std::cout << grid.getSRS().exportToWkt() << "\n";
@@ -171,10 +159,17 @@ int main(int argc, char *argv[])
     std::cout << options.errorThreshold << "\n";
     std::cout << options.warpMemoryLimit << "\n";
 
-
     options.resampleAlg = GRA_Average;
     options.errorThreshold = 0.125;
     options.warpMemoryLimit = 0.0;
 
-    // const RasterTiler tiler(poDataset, grid2, options);
+
+    STTFileTileSerializer serializer(params.outputDir, params.resume);
+
+    const RasterTiler tiler(poDataset, grid, options);
+    // const TerrainTiler tiler(poDataset, *grid);
+
+    // buildTerrain(serializer, tiler, command, threadMetadata);
+
+    GDALClose(poDataset);
 }

@@ -26,15 +26,16 @@ public:
 protected:
     /// the underlying GZFILE*
     gzFile fp;
-}
+};
 
 /// implements STTOutputStream for gzipped files
 class STT_DLL stt::STTZFileOutputStream: public stt::STTZOutputStream
 {
+public:
     STTZFileOutputStream(const char *filename);
     ~STTZFileOutputStream();
 
     void close();
-}
+};
 
 #endif /* STTZOUTPUTSTREAM_H_ */
