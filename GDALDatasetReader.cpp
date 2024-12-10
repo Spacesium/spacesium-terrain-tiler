@@ -51,8 +51,8 @@ stt::GDALDatasetReader::createRasterTile(const GDALTiler &tiler,
     return tiler.createRasterTile(dataset, coord);
 }
 
-/// create a raster tiel from a GDALDataset
-GDALTile *
+/// create a raster tile from a GDALDataset
+GDALDataset *
 stt::GDALDatasetReader::createOverview(const GDALTiler &tiler,
     GDALDataset *dataset, const TileCoordinate &coord, int overviewIndex)
 {
@@ -82,7 +82,7 @@ stt::GDALDatasetReader::createOverview(const GDALTiler &tiler,
 }
 
 /// the destructor
-stt::GDALDatasetReaderWIthOverviews::~GDALDatasetReaderWithOverviews()
+stt::GDALDatasetReaderWithOverviews::~GDALDatasetReaderWithOverviews()
 {
     reset();
 }

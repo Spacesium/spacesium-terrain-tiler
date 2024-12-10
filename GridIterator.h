@@ -35,7 +35,7 @@ namespace stt {
  * a spatial filter
  */
 
-class stt:GridIterator: public std::iterator<std::input_iterator_tag, TileCoordinate *>
+class stt::GridIterator: public std::iterator<std::input_iterator_tag, TileCoordinate *>
 {
 public:
     /// instantiate an iterator with a grid and separate bounds
@@ -127,7 +127,7 @@ public:
         && endZoom == other.endZoom
         && bounds == other.bounds
         && gridExtent == other.gridExtent
-        && grid == other.grid
+        && grid == other.grid;
     }
 
     /// override the inequality operator
@@ -154,7 +154,7 @@ public:
         if (start < end)
             throw STTException("Starting zoom level cannot be less than the end zoom level");
 
-        currentTile.zoom = startZom = start;
+        currentTile.zoom = startZoom = start;
         endZoom = end;
 
         setTileBounds();
@@ -169,7 +169,7 @@ public:
             TileCoordinate ur = grid.crsToTile(gridExtent.getUpperRight(), zoom);
 
             TileBounds zoomBound(ll, ur);
-            size += (zoomBound.getWidth() + 1) * (zoomBound.getHegith() + 1);
+            size += (zoomBound.getWidth() + 1) * (zoomBound.getHeight() + 1);
         }
 
         return size;
@@ -185,8 +185,8 @@ protected:
     /// set the tile bounds of the grid for the current zoom level
     void
     setTileBounds() {
-        TileCoordinate ll = grid.crsToTile(gridExtent.getLowerLeft(), currentTile.zoom),
-        TileCoordinate ur = grid.crsToTile(gridExtent.getUpperRight(), currentTile.zoom),
+        TileCoordinate ll = grid.crsToTile(gridExtent.getLowerLeft(), currentTile.zoom);
+        TileCoordinate ur = grid.crsToTile(gridExtent.getUpperRight(), currentTile.zoom);
 
         // set the bounds
         bounds = TileBounds(ll, ur);
@@ -200,7 +200,7 @@ protected:
     i_zoom endZoom;                  /// the final zoom level
     CRSBounds gridExtent;            /// the extent of the underlying grid to iterate over
     TileBounds bounds;               /// the extent of the currently iterated zoom level
-    TileCoordiante currentTile;      /// the identity of the current tile being pointed to
+    TileCoordinate currentTile;      /// the identity of the current tile being pointed to
 };
 
 #endif /* GRIDITERATOR_H_ */

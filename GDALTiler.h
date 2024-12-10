@@ -140,7 +140,7 @@ protected:
     /// close the underlying dataset
     void closeDataset();
 
-    /// create a raster tiel from a tile coordinate
+    /// create a raster tile from a tile coordinate
     virtual GDALTile *
     createRasterTile(GDALDataset *dataset, const TileCoordinate &coord) const;
 

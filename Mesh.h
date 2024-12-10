@@ -43,7 +43,7 @@ public:
         char wktText[512];
         memset(wktText, 0, sizeof(wktText));
 
-        for (int i = 0; i < indices.size(); i += 3) {
+        for (int i = 0, icount = indices.size(); i < icount; i += 3) {
             CRSVertex v0 = vertices[indices[i]];
             CRSVertex v1 = vertices[indices[i + 1]];
             CRSVertex v2 = vertices[indices[i + 2]];

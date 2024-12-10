@@ -31,6 +31,9 @@ add_library(stt SHARED
     STTZOutputStream.cpp
     TerrainTile.cpp
     MeshTile.cpp
+    TerrainTiler.cpp
+    GDALDatasetReader.cpp
+    MeshTiler.cpp
 )
 
 target_link_libraries(space-terrain-tiler Boost::program_options)

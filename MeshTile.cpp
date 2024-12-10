@@ -431,3 +431,8 @@ const Mesh & MeshTile::getMesh() const
 {
     return mMesh;
 }
+
+Mesh & MeshTile::getMesh()
+{
+    return mMesh;
+}

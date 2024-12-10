@@ -8,12 +8,12 @@
 
 #include "GDALDatasetReader.h"
 #include "GlobalMercator.h"
-// #include "RasterIterator.h"
+#include "RasterIterator.h"
 // #include "TerrainIterator.h"
-// #include "MeshIterator.h"
+#include "MeshIterator.h"
 // #include "GDALDatasetReader.h"
 #include "STTFileTileSerializer.h"
-#include "RasterTiler.h"
+// #include "RasterTiler.h"
 
 using namespace stt;
 namespace po = boost::program_options;
@@ -34,6 +34,7 @@ struct paramsStruct {
     bool quiet;
     bool verbose;
     bool resume;
+    std::string outputFormat;
 };
 
 paramsStruct parseOptions(int argc, char *argv[])
@@ -50,8 +51,13 @@ paramsStruct parseOptions(int argc, char *argv[])
         )
         (
             "profile,p",
-            po::value<std::string>(&params.profile)->default_value("Terrain"),
-            "specify the TMS profile for the tiles. this is either `Terrain` (the default), `Mesh` (Chunked LOD mesh), or any format listed by `gdalinfo --formats`"
+            po::value<std::string>(&params.profile)->default_value("geodetic"),
+            "specify the TMS profile for the tiles. this is either `geodetic` (the default) or `mercator`"
+        )
+        (
+            "format,f",
+            po::value<std::string>(&params.outputFormat)->default_value("Mesh"),
+            "specify the output format for the tiles. this is either `Terrain` (the default), `Mesh` (Chunked LOD mesh), or any format listed by `gdalinfo --formats`"
         )
         (
             "verbose,v",
@@ -95,6 +101,14 @@ paramsStruct parseOptions(int argc, char *argv[])
     return params;
 }
 
+/// output mesh tiles represented by a tiler to a directory
+// static void buildMesh(MeshSerializer &serializer, const MeshTiler &tiler,
+//     TerrainBuild *command, TerrainMetadata *metadata,
+//     bool writeVertexNormals = false)
+// {
+// }
+
+
 int main(int argc, char *argv[])
 {
     paramsStruct params = parseOptions(argc, argv);
@@ -123,8 +137,9 @@ int main(int argc, char *argv[])
     std::cout << "extension: " << params.outputDir.extension() << "\n";
     std::cout << "quiet: " << params.quiet << "\n";
     std::cout << "profile: " << params.profile << "\n";
+    std::cout << "output format: " << params.outputFormat << "\n";
 
-    int zoomVal = 1;
+    int zoomVal { 1 };
 
     fs::path newPath = params.outputDir.parent_path() / std::to_string(zoomVal) / "somethingelse.png";
     std::cout << "new path: " << newPath.string() << "\n";
@@ -163,13 +178,48 @@ int main(int argc, char *argv[])
     options.errorThreshold = 0.125;
     options.warpMemoryLimit = 0.0;
 
-
     STTFileTileSerializer serializer(params.outputDir, params.resume);
 
-    const RasterTiler tiler(poDataset, grid, options);
-    // const TerrainTiler tiler(poDataset, *grid);
+    // Height Map Option
+    // const TerrainTiler tiler2(poDataset, grid);
 
     // buildTerrain(serializer, tiler, command, threadMetadata);
 
+
+    // Quantized Mesh Option
+    if (params.outputFormat.compare("Mesh") == 0) {
+        const MeshTiler tiler(poDataset, grid, options, params.meshQualityFactor);
+        // const RasterTiler tiler(poDataset, grid, options);
+        std::cout << params.outputFormat << "\n";
+
+        i_zoom startZoom = (params.startZoom < 0) ? tiler.maxZoomLevel() : params.startZoom;
+        i_zoom endZoom = (params.endZoom < 0) ? 0 : params.endZoom;
+
+        // DEBUG Chunker:
+        #if 1
+        const std::string dirname = params.outputDir;
+        std::cout << "dirname: " << dirname << "\n";
+        TileCoordinate coordinate(13, 8102, 6047);
+        MeshTile *tile = tiler.createMesh(tiler.dataset(), coordinate);
+        const std::string txtname = STTFileTileSerializer::getTileFilename(&coordinate, dirname, "wkt");
+        const Mesh &mesh = tile->getMesh();
+        mesh.writeWktFile(txtname.c_str());
+
+        CRSBounds bounds = tiler.grid().tileBounds(coordinate);
+        double x = bounds.getMinX() + 0.5 * (bounds.getMaxX() - bounds.getMinX());
+        double y = bounds.getMinY() + 0.5 * (bounds.getMaxY() - bounds.getMinY());
+
+        std::cout << "x: " << x << "\n";
+        std::cout << "y: " << y << "\n";
+        #endif
+
+        std::cout << "startZoom: " << startZoom << "\n";
+        std::cout << "endZoom: " << endZoom << "\n";
+    }
+
+    std::cout << "compare -- " << params.outputFormat.compare("Mesh") << "\n";
+
     GDALClose(poDataset);
+
+    std::cout << "AIAIAIAIAIAIAIAIAIAIAIAIAIAIAIAIAIA" << std::endl;
 }

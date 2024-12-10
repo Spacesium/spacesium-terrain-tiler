@@ -25,7 +25,7 @@ public:
     /// instantiate a tiler with all required arguments
     MeshTiler(GDALDataset *poDataset, const Grid &grid, const TilerOptions &options, double meshQualityFactor = 1.0):
         TerrainTiler(poDataset, grid, options),
-        meshQualityFactor(meshQualityFactor)
+        mMeshQualityFactor(meshQualityFactor)
     {}
 
     /// instantiate a tiler with an empty GDAL dataset

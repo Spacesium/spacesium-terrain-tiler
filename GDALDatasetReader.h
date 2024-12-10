@@ -12,6 +12,7 @@
 
 #include "TileCoordinate.h"
 #include "GDALTiler.h"
+#include "TerrainTiler.h"
 
 namespace stt {
     class GDALDatasetReader;

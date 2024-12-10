@@ -24,7 +24,7 @@ namespace stt {
  * @brief model the terrain heightmap specification
  *
  * this aims to implement the cesium [heightmap-1.0 terrain
- * format](http://cesiumjs.org/data-and-assets/terrain/formats/heightmap-1.0.html).
+ * format](https://github.com/CesiumGS/cesium/wiki/heightmap-1.0).
  */
 class STT_DLL stt::Terrain
 {

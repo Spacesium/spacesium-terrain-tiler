@@ -29,7 +29,7 @@ namespace stt
 }
 
 /// helper struct with state info for chunkning a HeightField
-struct::stt:chunk::gen_state
+struct stt::chunk::gen_state
 {
     int my_buffer[2][2];    // x, y coords of the last two vertices emitted by the generate_ functions.
     int activation_level;   // for determining whether a vertex is enabled in the block we're working on
@@ -72,7 +72,7 @@ public:
         m_log_size = (int)(log2((float)m_size - 1) + 0.5);
 
         // initialize level array.
-        m_levels = (int*)CPMalloc(tileCellSize * sizeof(int));
+        m_levels = (int*)CPLMalloc(tileCellSize * sizeof(int));
         for (int i = 0; i < tileCellSize; i++) m_levels[i] = 255;
     }
 
@@ -121,7 +121,7 @@ public:
 
     /// returns the Coordinate of the Neighbor of the specified border (Left=0, Top=1, Right=2, Bottom=3)
     static stt::TileCoordinate neighborCoord(const Grid &grid, const stt::TileCoordinate &coord, int borderIndex, bool &okNeighborCoord) {
-        okNeighbordCoord = true;
+        okNeighborCoord = true;
 
         switch (borderIndex) {
             case 0:
@@ -210,7 +210,7 @@ public:
 
         if (m_levels) {
             CPLFree(m_levels);
-            m_levles = NULL;
+            m_levels = NULL;
         }
     }
 
@@ -461,7 +461,7 @@ private:
                 // initial vertex of quadrant.
                 mesh.emit_vertex(hf, q[i][0], q[i][1]);
                 state.set_my_buffer(q[i][0], q[i][1]);
-                state.previous_lefl = 2 * log_size + 1;
+                state.previous_level = 2 * log_size + 1;
 
                 generate_quadrant(hf, mesh,
                     &state,

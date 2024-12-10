@@ -12,6 +12,7 @@
 #include "STTException.h"
 #include "STTFileTileSerializer.h"
 
+#include "GDALDatasetReader.h"
 #include "STTFileOutputStream.h"
 #include "STTZOutputStream.h"
 
@@ -118,7 +119,7 @@ bool
 stt::STTFileTileSerializer::serializeTile(const stt::TerrainTile *tile)
 {
     const TileCoordinate *coordinate = tile;
-    const std::string filename = getTileFilename(tile, moutputDir, "terrain");
+    const std::string filename = getTileFilename(coordinate, moutputDir, "terrain");
     const std::string temp_filename = concat(filename, ".tmp");
 
     STTZFileOutputStream ostream(temp_filename.c_str());

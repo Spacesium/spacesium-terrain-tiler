@@ -6,6 +6,9 @@
  * @brief this declares the `TerrainTiler` class
  */
 
+#include "TerrainTile.h"
+#include "GDALTiler.h"
+
 namespace stt {
     class TerrainTiler;
 }
@@ -14,7 +17,7 @@ namespace stt {
  * @brief create `TerrainTiler`s from a GDAL Dataset
  *
  * this class derives from `GDALTiler` and adds the `GDALTiler::createTerrainTile`
- * method enabling `TerrainTile`s to be created for a specific `TileCoordiante`.
+ * method enabling `TerrainTile`s to be created for a specific `TileCoordinate`.
  */
 class STT_DLL stt::TerrainTiler: public GDALTiler
 {
@@ -42,7 +45,7 @@ public:
 
     /// create a tile from a tile coordinate
     TerrainTile *
-    createTile(GDALDataset *dataset, const TileCoordiante &coord, GDALDatasetReader *reader) const;
+    createTile(GDALDataset *dataset, const TileCoordinate &coord, GDALDatasetReader *reader) const;
 
 protected:
     /// create a `GDALTile` representing the rquired terrain tile data
@@ -68,7 +71,7 @@ protected:
         CRSBounds tile = mGrid.tileBounds(coord); // the actual tile bounds
 
         // get the resolution for the dataset without a border
-        resolution = (tile.getMax() - tile.getMinX()) / lTileSize;
+        resolution = (tile.getMaxX() - tile.getMinX()) / lTileSize;
 
         // extend the easting by one pixel's worth
         tile.setMinX(tile.getMinX() - resolution);

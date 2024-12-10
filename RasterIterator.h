@@ -37,7 +37,7 @@ public:
     {}
 
     virtual GDALTile *
-    opreator*() const override {
+    operator*() const override {
         return static_cast<GDALTile *>(TilerIterator::operator*());
     }
 };
