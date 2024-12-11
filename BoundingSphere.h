@@ -153,7 +153,7 @@ public:
         max.y = MIN;
         max.z = MIN;
 
-        for (int i = 0; i < points.size(); i++) {
+        for (int i = 0, icount = points.size(); i < icount; i++) {
             const Coordinate3D<T> &point = points[i];
 
             if (point.x < min.x) min.x = point.x;

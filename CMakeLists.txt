@@ -22,18 +22,18 @@ find_package(GDAL REQUIRED)
 find_package(PROJ REQUIRED)
 
 add_library(stt SHARED
+    GDALDatasetReader.cpp
     GlobalGeodetic.cpp
     GlobalMercator.cpp
     GDALTiler.cpp
     GDALTile.cpp
+    MeshTile.cpp
+    MeshTiler.cpp
     STTFileTileSerializer.cpp
     STTFileOutputStream.cpp
     STTZOutputStream.cpp
     TerrainTile.cpp
-    MeshTile.cpp
     TerrainTiler.cpp
-    GDALDatasetReader.cpp
-    MeshTiler.cpp
 )
 
 target_link_libraries(space-terrain-tiler Boost::program_options)

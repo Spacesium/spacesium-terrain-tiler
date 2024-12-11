@@ -216,6 +216,15 @@ MeshTile::MeshTile(const TileCoordinate &coord): Tile(coord), mChildren(0)
 /**
 * @details this writes gzipped terrain data to a file.
 */
+void MeshTile::writeFile(const char *fileName, bool writeVertexNormals) const
+{
+    STTZFileOutputStream ostream(fileName);
+    writeFile(ostream);
+}
+
+/*
+* @details this writes raw terrain data to an output stream.
+*/
 void MeshTile::writeFile(STTOutputStream &ostream, bool writeVertexNormals) const
 {
     // calculate main header mesh data
